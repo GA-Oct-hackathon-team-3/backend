@@ -4,24 +4,25 @@ export interface IUser {
 
 export interface IExtReq {
     user?: IUser | null;
-    filename?: string,
+    filename?: string;
+    fileExtension?: string;
 }
 
-export interface ILoginRequest{
+export interface ILoginRequest {
     email: string;
     password: string;
 }
 
-export interface ILoginResponse{
+export interface ILoginResponse {
     accessToken: string;
 }
 
-export interface IChangePasswordRequest{
+export interface IChangePasswordRequest {
     oldPassword: string;
     newPassword: string;
 }
 
-export interface ISignupRequest{
+export interface ISignupRequest {
     email: string;
     password: string;
     name: string;

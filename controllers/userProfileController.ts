@@ -50,10 +50,13 @@ export async function getUserProfile(req: Request & IExtReq, res: Response) {
 
 export async function uploadUserPhoto(req: Request & IExtReq, res: Response) {
     try {
+        const profile = await UserProfile.findOne({user: req.user});
+        if(!profile) throw {status: 404, message: "Profile not found"};
         uploadPhoto(req, res, req.user!.toString(), async (err, url) => {
             if (err) return;
             // persist to database
-            console.log(`photo url is ${url}`);
+            profile.photo = url;
+            await profile.save();
         });
     } catch (error: any) {
         if ('status' in error && 'message' in error) {

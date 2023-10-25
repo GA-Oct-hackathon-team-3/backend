@@ -13,7 +13,9 @@ const upload = multer({
         s3: s3Client,
         bucket: AWS_S3_BUCKET!,
         key: function (req: Request & IExtReq, file, cb) {
-            cb(null, `${req.filename}`);
+            const extension = file.originalname.split('.').pop();
+            req.fileExtension = extension;
+            cb(null, `${req.filename}.${extension}`);
         }
     })
 }).single('photo');
@@ -25,7 +27,7 @@ export function uploadPhoto(req: Request & IExtReq, res: Response, filename: str
             callback(err);
             return res.status(500).json({ error: err.message });
         }
-        const photoUrl = `https://${AWS_S3_BUCKET}.s3.${AWS_REGION}.amazonaws.com/${filename}`
+        const photoUrl = `https://${AWS_S3_BUCKET}.s3.${AWS_REGION}.amazonaws.com/${filename}.${req.fileExtension}`
         callback(null, photoUrl)
         res.status(200).json({ photoUrl, message: 'File uploaded successfully' });
     });
