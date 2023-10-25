@@ -6,6 +6,7 @@ import UserProfile from "../models/userProfile";
 import { HTTPError, sendError } from "../utilities/utils";
 import { IUserProfileDetails } from "../interfaces/userProfile";
 import { IExtReq } from "../interfaces/auth";
+import { uploadPhoto } from "../utilities/aws";
 
 const { AWS_REGION, AWS_SECRET, AWS_S3_BUCKET, AWS_ID } = process.env!;
 
@@ -48,22 +49,11 @@ export async function getUserProfile(req: Request & IExtReq, res: Response) {
 }
 
 export async function uploadUserPhoto(req: Request & IExtReq, res: Response) {
-    try {       
-        const s3Client = new S3Client({ region: AWS_REGION, credentials: { accessKeyId: AWS_ID!, secretAccessKey: AWS_SECRET! } });
-        const upload = multer({
-            storage: multerS3({
-                s3: s3Client,
-                bucket: AWS_S3_BUCKET!,
-                key: function (req: Request & IExtReq, file, cb) {
-                    cb(null, req.user?.toString())
-                }
-            })
-        }).single('photo');
-        upload(req, res, function (err) {
-            if (err) {
-                throw { status: 500, message: err.message };
-            }
-            res.status(200).json({ message: 'Photo uploaded successfully' });
+    try {
+        uploadPhoto(req, res, req.user!.toString(), async (err, url) => {
+            if (err) return;
+            // persist to database
+            console.log(`photo url is ${url}`);
         });
     } catch (error: any) {
         if ('status' in error && 'message' in error) {

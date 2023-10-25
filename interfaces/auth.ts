@@ -4,6 +4,7 @@ export interface IUser {
 
 export interface IExtReq {
     user?: IUser | null;
+    filename?: string,
 }
 
 export interface ILoginRequest{
