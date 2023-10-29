@@ -1,12 +1,14 @@
+require('dotenv').config();
 import mongoose from "mongoose";
 import request from 'supertest';
 import User from "../models/user";
-import * as userCtrl from './userController';
+import jwt, { JwtPayload } from 'jsonwebtoken';
 import { configureApp } from '../index';
 import bearer from "../middleware/bearer";
-import { toSeconds } from "../utilities/utils";
 import userProfile from "../models/userProfile";
 import friend from "../models/friend";
+import userVerification from "../models/userVerification";
+import cache from "../utilities/cache";
 
 const app = configureApp([bearer]);
 
@@ -36,7 +38,7 @@ describe('User Controller', () => {
             //@ts-ignore
             .post('/api/users/')
             .send({
-                email: "test@email.com",
+                email: "can@xn--glolu-jua30a.com",
                 password: "123456Aa!",
                 name: "test",
                 dob: "1990-01-01",
@@ -51,11 +53,24 @@ describe('User Controller', () => {
             //@ts-ignore
             .post('/api/users/login')
             .send({
-                email: "test@email.com",
+                email: "can@xn--glolu-jua30a.com",
                 password: "123456Aa!",
             })
             .expect(200);
         token = res.body.accessToken;
+    });
+
+    // Test email verification
+    it('should verify a user\'s e-mail', async () => {
+        const userId = (jwt.decode(token) as JwtPayload).payload;
+        const verification = cache.emailVerificationTokenCache.get(`verification:${userId}`);
+        const response = await request(app)
+            .post('/api/users/verify')
+            .set('Authorization', `Bearer ${token}`)
+            .send({ token: JSON.parse(verification!).token })
+            .expect(200);
+        const verificationRec = await userVerification.findOne({ user: new mongoose.Types.ObjectId(userId) });
+        expect(verificationRec?.isVerified).toBe(true);
     });
 
     // Test updating user details
@@ -104,6 +119,17 @@ describe('User Controller', () => {
             .expect(200);
         const users = await User.find({});
         expect(users.length).toEqual(0);
+    });
+
+    it("should delete associated user profiles on user deletion", async () => {
+        // assert user was deleted
+        const users = await User.find({});
+        expect(users.length).toEqual(0);
+        // assert user profile was also deleted
+        const profiles = await userProfile.find({});
+        expect(profiles.length).toEqual(0);
+        const verifications = await userVerification.find({});
+        expect(verifications.length).toBe(0);
     });
 
     // Test confirmation token expiration -- Long Running test + need to modify .env to work.
@@ -155,42 +181,5 @@ describe('User Controller', () => {
             .expect(401);
     });
 
-    it("should delete associated user profiles on user deletion", async () => {
-        const res = await request(app)
-            //@ts-ignore
-            .post('/api/users')
-            .send({
-                email: "test@email.com",
-                password: "123456Aa!",
-                name: "first",
-                dob: "1990-01-01",
-                gender: "male",
-            })
-            .expect(201);
-        token = res.body.accessToken;
-        // assert that user profile was created successfully
-        let profiles = await userProfile.find({});
-        expect(profiles.length).toBeGreaterThan(0);
-        // delete user
-        const deleteRes = await request(app)
-            //@ts-ignore
-            .delete('/api/users/')
-            .set('Authorization', `Bearer ${token}`)
-            .expect(200);
-        const confirmationToken = deleteRes.body.confirmationToken;
-        await request(app)
-            // @ts-ignore
-            .post("/api/users/confirm-delete")
-            .set('Authorization', `Bearer ${token}`)
-            .send({
-                confirmationToken
-            })
-            .expect(200);
-        // assert user was deleted
-        const users = await User.find({});
-        expect(users.length).toEqual(0);
-        // assert user profile was also deleted
-        profiles = await userProfile.find({});
-        expect(profiles.length).toEqual(0);
-    });
+
 });

@@ -1,5 +1,7 @@
 import { Response } from "express";
 import { SlidingWindowRateLimiter } from "./slidingWindowRateLimiter";
+import { IEmail } from "../interfaces/email";
+import emailQueue from "./emailQueue";
 
 export const rateLimiterBing = new SlidingWindowRateLimiter(3, 1000);
 export const rateLimiterOpenAI = new SlidingWindowRateLimiter(3, 60000);
@@ -57,4 +59,15 @@ export async function fetchImageThumbnail(query: string, apiKey: string) {
         console.error(`Fetch error: ${error}`);
         return null;
     }
+}
+
+export function sendEmail(data: IEmail){
+    emailQueue.push({
+        recipient: data.recipient,
+        cc: data.cc,
+        bcc: data.bcc,
+        subject: data.subject,
+        body: data.body,
+        bodyHtml: data.bodyHtml,
+    });
 }

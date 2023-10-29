@@ -2,12 +2,16 @@ import mongoose, { CallbackError } from "mongoose";
 import { compareHash, hashString } from "../utilities/cryptoService";
 import userProfileSchema from "./userProfileSchema";
 import userVerificationSchema from "./userVerificationSchema";
+import { sendVerificationEmail } from "../utilities/verificationService";
 
 const userSchema = new mongoose.Schema({
     email: {
         type: String,
         required: true,
         unique: true,
+        trim: true,
+        lowercase: true,
+        validate: [validateEmailPattern, "{PATH} does not match acceptable email pattern"],
     },
     name: {
         type: String,
@@ -45,6 +49,10 @@ function validatePasswordPattern(val: string) {
     return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\.\*!@_\-\(\)\[\]\=\?\'\"\\\/\#\$\%\|\^\&\+\:\;\!\<\>])[a-zA-Z\d\.\*!@_\-\(\)\[\]\=\?\'\"\\\/\#\$\%\|\^\&\+\:\;\!\<\>]{8,}$/.test(val);
 }
 
+function validateEmailPattern(val: string) {
+    return /^[^@\s]+@[^@\s]+\.[^@\s]+$/gi.test(val);
+}
+
 userSchema.pre("save", async function (next) {
     // Automatically create a new blank user profile when user is created
     if (this.isNew) {
@@ -52,6 +60,7 @@ userSchema.pre("save", async function (next) {
         await Profile.create({ user: this._id });
         const Verification = mongoose.model("UserVerification", userVerificationSchema);
         await Verification.create({ user: this._id });
+        sendVerificationEmail(this.email, this._id.toString());
     }
 
     if (this.isModified('dob')) {

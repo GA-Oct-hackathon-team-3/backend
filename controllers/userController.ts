@@ -1,10 +1,14 @@
 import { Request, Response } from "express";
 import jwt, { Secret } from 'jsonwebtoken';
+import mongoose from "mongoose";
 import { IChangePasswordRequest, IExtReq, ILoginRequest, ISignupRequest } from "../interfaces/auth";
 import User, { IUserDocument } from "../models/user";
 import { IUserDetails } from "../interfaces/user";
 import userProfile from "../models/userProfile";
 import { HTTPError, sendError } from "../utilities/utils";
+import { verifyFromCache } from "../utilities/verificationService";
+import UserVerification from "../models/userVerification";
+import userVerification from "../models/userVerification";
 
 const { AUTH_JWT_SECRET, AUTH_JWT_EXPIRE, CONFIRM_DELETE_EXPIRE } = process.env;
 
@@ -123,7 +127,8 @@ export async function confirmDeleteUser(req: Request & IExtReq, res: Response) {
 
         await user.deleteOne();
         // TODO: Clean other records belonging to user, such as friends, profile, etc.
-        await userProfile.deleteMany({user: user._id});
+        await userProfile.deleteMany({ user: user._id });
+        await userVerification.deleteMany({user: user._id});
 
         res.status(200).json({ message: "User deleted" });
     } catch (error: any) {
@@ -149,6 +154,26 @@ export async function signup(req: Request, res: Response) {
         // TODO: Send activation/verification e-mail?
 
         res.status(201).json({ message: "User successfully created", accessToken: createJwt(user._id) });
+    } catch (error: any) {
+        if ('status' in error && 'message' in error) {
+            sendError(res, error as HTTPError);
+        } else {
+            res.status(500).json({ message: "Internal server error" });
+        }
+    }
+}
+
+export async function verifyEmail(req: Request & IExtReq, res: Response) {
+    try {
+        const { token } = req.body;
+        const verification = verifyFromCache(token);
+        if (!verification) throw { status: 400, message: "Token expired or invalid" };
+        const updated = await UserVerification.findOneAndUpdate(
+            { user: new mongoose.Types.ObjectId(verification.user) },
+            { isVerified: true }, 
+            { new: true, upsert: false });
+        if(!updated) throw {status: 500, message: "Verification record not found"};
+        res.status(200).json({message: "User verified"});
     } catch (error: any) {
         if ('status' in error && 'message' in error) {
             sendError(res, error as HTTPError);

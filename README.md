@@ -44,6 +44,14 @@ Server runs on PORT 3010 by default.
 ## Protected Routes
 **Note**: All the routes below expect an `Authorization` header with a Bearer token.
 
+### Verify Email
+- **Endpoint**: `POST /api/users/verify`
+- **Authorization**: Bearer Token
+- **Request Body**: JSON object containing:
+  - `token` (required, string)
+- **Response**: JSON object containing:
+  - `message: User verified`
+
 ### Update Password
 
 - **Endpoint**: `PUT /api/users/password`

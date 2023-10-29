@@ -1,3 +1,4 @@
+require('dotenv').config();
 import mongoose from "mongoose";
 import User from "./user";
 import userProfile from "./userProfile";
@@ -21,7 +22,7 @@ describe("User Model", () => {
         const password = "123456aA!";
         const user = await User.create({
             name: "test",
-            email: "test@test",
+            email: "can@xn--glolu-jua30a.com",
             dob: "1990-01-01",
             gender: "male",
             passwordHash: password,
