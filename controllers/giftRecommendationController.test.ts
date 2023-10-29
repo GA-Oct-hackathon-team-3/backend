@@ -104,7 +104,9 @@ describe("gift recommendation controller", () => {
             title: "Live monkey",
             reason: "Your friend looks like a monkey",
             imageSearchQuery: "live monkey",
-            imgSrc: "https://placeholder.com/monkey.png"
+            imgSrc: "https://placeholder.com/monkey.png",
+            estimatedCost: "$500",
+            giftType: "Present"
         };
         const response = await request(app)
             .post(`/api/friends/${friendId}/favorites`)

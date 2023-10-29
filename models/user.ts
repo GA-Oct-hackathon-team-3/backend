@@ -1,6 +1,7 @@
 import mongoose, { CallbackError } from "mongoose";
 import { compareHash, hashString } from "../utilities/cryptoService";
 import userProfileSchema from "./userProfileSchema";
+import userVerificationSchema from "./userVerificationSchema";
 
 const userSchema = new mongoose.Schema({
     email: {
@@ -49,9 +50,11 @@ userSchema.pre("save", async function (next) {
     if (this.isNew) {
         const Profile = mongoose.model("UserProfile", userProfileSchema);
         await Profile.create({ user: this._id });
+        const Verification = mongoose.model("UserVerification", userVerificationSchema);
+        await Verification.create({ user: this._id });
     }
 
-    if(this.isModified('dob')){
+    if (this.isModified('dob')) {
         if (this.dob > new Date()) {
             const error = new Error('Date of birth cannot be in the future');
             return next(error);

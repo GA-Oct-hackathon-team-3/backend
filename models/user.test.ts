@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import User from "./user";
 import userProfile from "./userProfile";
+import userVerification from "./userVerification";
 
 declare global {
     var __MONGO_URI__: string;
@@ -38,6 +39,11 @@ describe("User Model", () => {
     it("should automatically create a profile when user is created", async () => {
         const profiles = await userProfile.find({});
         expect(profiles.length).toBeGreaterThan(0);
+    });
+
+    it("should automatically create a verification record", async ()=>{
+        const verifications = await userVerification.find({});
+        expect(verifications.length).toBeGreaterThan(0);
     });
 
 });
