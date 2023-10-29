@@ -1,11 +1,12 @@
 import { Request, Response } from "express";
+import { UploadedFile } from 'express-fileupload';
 import UserProfile from "../models/userProfile";
 import User from "../models/user";
 import { HTTPError, sendError } from "../utilities/utils";
 import { IUserProfileDetails } from "../interfaces/userProfile";
 import { IExtReq } from "../interfaces/auth";
 import { s3Client, s3BaseUrl, PutObjectCommand } from '../utilities/s3upload';
-import { UploadedFile } from 'express-fileupload';
+import UserVerification from "../models/userVerification";
 
 export async function updateProfileDetails(req: Request & IExtReq, res: Response) {
     try {
@@ -86,8 +87,9 @@ export async function getCurrentUser(req: Request & IExtReq, res: Response) {
     try {
         const profile = await UserProfile.findOne({ user: req.user });
         const user = await User.findById(req.user);
+        const verification = await UserVerification.findOne({user: req.user});
         if (!user || !profile) throw { status: 404, message: "User or profile not found" };
-        res.status(200).json({ user, profile });
+        res.status(200).json({ user, profile ,isVerified: verification?.isVerified });
     } catch (error: any) {
         if ('status' in error && 'message' in error) {
             sendError(res, error as HTTPError);
